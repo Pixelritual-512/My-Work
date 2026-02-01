@@ -68,10 +68,10 @@ class StudentListTile extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(student.mobileNumber, style: const TextStyle(color: Colors.black87)),
+            Text(student.mobileNumber, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
             Text(
               'Fee: ₹${student.monthlyFee.toInt()}',
-              style: const TextStyle(color: Colors.grey),
+              style: TextStyle(color: Theme.of(context).hintColor),
             ),
             Text(
               'Used: ${student.plateCount} / 28',

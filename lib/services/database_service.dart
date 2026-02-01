@@ -105,18 +105,99 @@ class DatabaseService {
   }
 
   Future<void> deleteStudent(String studentId) async {
+    // Cascade delete: Remove student's attendance records
+    final attendanceDocs = await _db.collection('attendance')
+        .where('studentId', isEqualTo: studentId)
+        .get();
+    for (var doc in attendanceDocs.docs) {
+      await doc.reference.delete();
+    }
+    
+    // Cascade delete: Remove student's payment records
+    final paymentDocs = await _db.collection('payments')
+        .where('studentId', isEqualTo: studentId)
+        .get();
+    for (var doc in paymentDocs.docs) {
+      await doc.reference.delete();
+    }
+    
+    // Finally, delete the student
     await _db.collection('students').doc(studentId).delete();
   }
 
+  Future<void> deleteAllOwnerData() async {
+    // Delete all students (includes cascade delete for attendance/payments)
+    final students = await _db.collection('students')
+        .where('ownerId', isEqualTo: uid)
+        .get();
+    for (var doc in students.docs) {
+      await deleteStudent(doc.id);
+    }
+    
+    // Delete remaining attendance records
+    final attendance = await _db.collection('attendance')
+        .where('ownerId', isEqualTo: uid)
+        .get();
+    for (var doc in attendance.docs) {
+      await doc.reference.delete();
+    }
+    
+    // Delete remaining payments
+    final payments = await _db.collection('payments')
+        .where('ownerId', isEqualTo: uid)
+        .get();
+    for (var doc in payments.docs) {
+      await doc.reference.delete();
+    }
+    
+    // Delete all menu items
+    final menus = await _db.collection('menus')
+        .where('ownerId', isEqualTo: uid)
+        .get();
+    for (var doc in menus.docs) {
+      await doc.reference.delete();
+    }
+    
+    // Delete all guest meals
+    final guestMeals = await _db.collection('guest_meals')
+        .where('ownerId', isEqualTo: uid)
+        .get();
+    for (var doc in guestMeals.docs) {
+      await doc.reference.delete();
+    }
+    
+    // Finally, delete owner profile
+    await _db.collection('owners').doc(uid).delete();
+  }
+
+
   // --- Attendance Methods ---
   Future<void> initializeAttendanceForDate(String date) async {
+    // Step 1: Get all active students
     final students = await _db.collection('students')
         .where('ownerId', isEqualTo: uid)
         .where('active', isEqualTo: true)
         .get();
 
+    final validStudentIds = students.docs.map((doc) => doc.id).toSet();
+    
+    // Step 2: Clean up orphaned attendance records (students that no longer exist)
+    final allAttendance = await _db.collection('attendance')
+        .where('ownerId', isEqualTo: uid)
+        .where('date', isEqualTo: date)
+        .get();
+    
     final batch = _db.batch();
     
+    for (var attendanceDoc in allAttendance.docs) {
+      final studentId = attendanceDoc.data()['studentId'];
+      if (!validStudentIds.contains(studentId)) {
+        // This attendance record references a deleted student - remove it
+        batch.delete(attendanceDoc.reference);
+      }
+    }
+    
+    // Step 3: Create missing attendance records for active students
     for (var doc in students.docs) {
       final existing = await _db.collection('attendance')
           .where('ownerId', isEqualTo: uid)
@@ -137,6 +218,7 @@ class DatabaseService {
         });
       }
     }
+    
     await batch.commit();
   }
 
@@ -351,19 +433,38 @@ class DatabaseService {
         .snapshots();
   }
 
-  Stream<Map<String, dynamic>> getTodayGuestStats() {
+  Stream<Map<String, dynamic>> getGuestAnalytics() {
      return _db.collection('guest_meals')
         .where('ownerId', isEqualTo: uid)
         .where('status', isEqualTo: 'approved')
         .snapshots().map((snapshot) {
-          int count = 0;
-          double revenue = 0;
+          int todayCount = 0;
+          double todayRevenue = 0.0;
+          double totalRevenue = 0.0;
+          
+          final now = DateTime.now();
+          final today = DateFormat('yyyy-MM-dd').format(now);
+          
           for (var doc in snapshot.docs) {
              final data = doc.data();
-             count++;
-             revenue += (data['amount'] ?? 0).toDouble();
+             final amount = (data['amount'] ?? 0).toDouble(); // Ensure double
+             totalRevenue += amount;
+             
+             // Check if today
+             final ts = data['timestamp'] as Timestamp?;
+             if (ts != null) {
+               final date = ts.toDate();
+               if (DateFormat('yyyy-MM-dd').format(date) == today) {
+                 todayCount++;
+                 todayRevenue += amount;
+               }
+             }
           }
-          return {'count': count, 'revenue': revenue};
+          return {
+            'todayCount': todayCount,
+            'todayRevenue': todayRevenue,
+            'totalRevenue': totalRevenue,
+          };
         });
   }
 

@@ -32,21 +32,21 @@ class _QrInviteScreenState extends State<QrInviteScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
+              Text(
                 'Scan to Connect',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Members can scan this single code to Register OR Mark Attendance.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 16),
+                style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7), fontSize: 16),
               ),
               const SizedBox(height: 40),
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Colors.white, // Keep QR background white for scanning reliability
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))
@@ -65,20 +65,24 @@ class _QrInviteScreenState extends State<QrInviteScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300)
+                  border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2))
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.link, size: 20, color: Colors.grey),
+                    Icon(Icons.link, size: 20, color: Theme.of(context).iconTheme.color?.withOpacity(0.5)),
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
                         scanLink,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                        style: TextStyle(
+                          fontFamily: 'monospace', 
+                          fontSize: 12,
+                          color: Theme.of(context).textTheme.bodyMedium?.color
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),

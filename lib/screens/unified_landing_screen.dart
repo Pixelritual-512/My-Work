@@ -33,12 +33,33 @@ class UnifiedLandingScreen extends StatelessWidget {
               child: FutureBuilder<Owner?>(
                 future: DatabaseService(uid: ownerId).getOwner(ownerId),
                 builder: (context, snapshot) {
-                  final messName = snapshot.data?.messName ?? 'Tiffin Mess';
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SizedBox(
+                      height: 300, 
+                      child: Center(child: CircularProgressIndicator(color: Colors.white))
+                    );
+                  }
+
+                  final messName = snapshot.data?.messName.isNotEmpty == true 
+                      ? snapshot.data!.messName 
+                      : 'Tiffin Mess';
                   
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.storefront, size: 80, color: Colors.white),
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: const [BoxShadow(blurRadius: 10, color: Colors.black26)]
+                        ),
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.white,
+                          backgroundImage: const AssetImage('assets/icon.png'),
+                          child: Container(),
+                        ),
+                      ),
                       const SizedBox(height: 20),
                       Text(
                         'Welcome to\n$messName',
@@ -129,10 +150,10 @@ class UnifiedLandingScreen extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20, 
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87
+                        color: Theme.of(context).textTheme.bodyLarge?.color
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -140,13 +161,13 @@ class UnifiedLandingScreen extends StatelessWidget {
                       subtitle,
                       style: TextStyle(
                         fontSize: 14, 
-                        color: Colors.grey[600]
+                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7)
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
+              Icon(Icons.arrow_forward_ios, color: Theme.of(context).iconTheme.color?.withOpacity(0.3), size: 16),
             ],
           ),
         ),

@@ -65,13 +65,10 @@ class AuthService {
   }
 
   // Delete Account
-  Future<void> deleteAccount(String password) async {
+  Future<void> deleteAccount() async {
     try {
       final user = _auth.currentUser;
-      if (user != null && user.email != null) {
-        AuthCredential credential = 
-           EmailAuthProvider.credential(email: user.email!, password: password);
-        await user.reauthenticateWithCredential(credential);
+      if (user != null) {
         await user.delete();
       }
     } catch (e) {

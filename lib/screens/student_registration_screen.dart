@@ -18,6 +18,9 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
   final _nameController = TextEditingController();
   final _mobileController = TextEditingController();
   bool _isLoading = false;
+  String _selectedMessType = 'Two Time'; // Default selection
+  double _selectedFee = 0.0; // Will be set from owner settings
+
 
   @override
   void dispose() {
@@ -30,14 +33,10 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
   Widget build(BuildContext context) {
     final db = DatabaseService(uid: widget.ownerId);
 
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (didPop) {
-        if (didPop) return;
-        // SystemNavigator.pop();
-      },
-      child: Scaffold(
-        body: Container(
+    return Scaffold(
+      body: Stack(
+        children: [
+          Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [Color(0xFF6C63FF), Color(0xFF4B39EF)],
@@ -61,7 +60,7 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
                         const Icon(Icons.person_add, size: 60, color: Color(0xFF6C63FF)),
                         const SizedBox(height: 10),
                         Text(
-                          'Join TiffinMate',
+                          'Join Mess',
                           style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 5),
@@ -79,7 +78,65 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
                           keyboardType: TextInputType.phone,
                           validator: (v) => v!.length < 10 ? 'Enter valid mobile number' : null,
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 30),
+                        StreamBuilder<Owner?>(
+                          stream: db.ownerStream,
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return const CircularProgressIndicator();
+                            }
+                            final owner = snapshot.data!;
+                            
+                            // Initialize fee on first build (safe way)
+                            if (_selectedFee == 0.0) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() {
+                                    _selectedFee = _selectedMessType == 'One Time' 
+                                        ? owner.oneTimeFee 
+                                        : owner.twoTimeFee;
+                                  });
+                                }
+                              });
+                            }
+                            
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Select Mess Plan',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 12),
+                                RadioListTile<String>(
+                                  title: Text('One Time - ₹${owner.oneTimeFee.toInt()}/month', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+                                  subtitle: Text('Lunch OR Dinner (choose one daily)', style: TextStyle(color: Theme.of(context).hintColor)),
+                                  value: 'One Time',
+                                  groupValue: _selectedMessType,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedMessType = value!;
+                                      _selectedFee = owner.oneTimeFee;
+                                    });
+                                  },
+                                ),
+                                RadioListTile<String>(
+                                  title: Text('Two Time - ₹${owner.twoTimeFee.toInt()}/month', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+                                  subtitle: Text('Lunch AND Dinner (both meals daily)', style: TextStyle(color: Theme.of(context).hintColor)),
+                                  value: 'Two Time',
+                                  groupValue: _selectedMessType,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedMessType = value!;
+                                      _selectedFee = owner.twoTimeFee;
+                                    });
+                                  },
+                                ),
+                              ],
+                            );
+                          }
+                        ),
+                        const SizedBox(height: 20),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
@@ -96,7 +153,21 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
               ),
             ),
           ),
-        ),
+          ),
+          Positioned(
+            top: 20,
+            left: 20,
+            child: SafeArea(
+              child: CircleAvatar(
+                backgroundColor: Theme.of(context).cardColor,
+                child: IconButton(
+                  icon: Icon(Icons.arrow_back, color: Theme.of(context).iconTheme.color),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -131,11 +202,11 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
         name: _nameController.text,
         photoUrl: '',
         mobileNumber: _mobileController.text,
-        monthlyFee: 0.0,
+        monthlyFee: _selectedFee,
         active: true,
         createdAt: DateTime.now(),
         messStartDate: DateTime.now(),
-        messType: 'Two Time',
+        messType: _selectedMessType,
         plateCount: 0,
       );
 
@@ -170,10 +241,10 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
           children: [
             const Text('Registration Successful!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             const SizedBox(height: 10),
-            const Text('Welcome to the mess! Your account is now active.', textAlign: TextAlign.center),
+            Text('Welcome to the mess! Your account is now active.', textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
             if (whatsappLink.isNotEmpty) ...[
               const SizedBox(height: 20),
-              const Text('Join our WhatsApp group for updates:'),
+              Text('Join our WhatsApp group for updates:', style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
             ],
           ],
         ),

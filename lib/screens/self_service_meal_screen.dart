@@ -35,36 +35,47 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
   Widget build(BuildContext context) {
     final db = DatabaseService(uid: widget.ownerId);
 
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (didPop) {
-        if (didPop) return;
-        // Try to exit the app/pwa logic
-        SystemNavigator.pop(); 
-      },
-      child: Scaffold(
-        body: _showMemberSuccess 
-          ? _buildSuccessView(_memberMealType, time: _memberSuccessTime)
-          : StreamBuilder<DocumentSnapshot>(
-          stream: _pendingRequestId != null 
-            ? FirebaseFirestore.instance.collection('guest_meals').doc(_pendingRequestId).snapshots()
-            : null,
-          builder: (context, snapshot) {
-            if (snapshot.hasData && snapshot.data!.exists) {
-              final data = snapshot.data!.data() as Map<String, dynamic>;
-              if (data['status'] == 'approved') {
-                final type = data['type'] as String? ?? 'Veg';
-                return _buildSuccessView(type, time: DateTime.now());
-              } else if (data['status'] == 'pending') {
-                return _buildWaitingView();
+    return Scaffold(
+      body: Stack(
+        children: [
+          _showMemberSuccess 
+            ? _buildSuccessView(_memberMealType, time: _memberSuccessTime)
+            : StreamBuilder<DocumentSnapshot>(
+            stream: _pendingRequestId != null 
+              ? FirebaseFirestore.instance.collection('guest_meals').doc(_pendingRequestId).snapshots()
+              : null,
+            builder: (context, snapshot) {
+              if (snapshot.hasData && snapshot.data!.exists) {
+                final data = snapshot.data!.data() as Map<String, dynamic>;
+                if (data['status'] == 'approved') {
+                  final type = data['type'] as String? ?? 'Veg';
+                  return _buildSuccessView(type, time: DateTime.now());
+                } else if (data['status'] == 'pending') {
+                  return _buildWaitingView();
+                }
               }
-            }
   
-            return _identifiedStudent != null 
-              ? _buildActionView(db) 
-              : _buildIdentifyView(db);
-          },
-        ),
+              return _identifiedStudent != null 
+                ? _buildActionView(db) 
+                : _buildIdentifyView(db);
+            },
+          ),
+          
+          if (!_showMemberSuccess && _pendingRequestId == null)
+            Positioned(
+              top: 20,
+              left: 20,
+              child: SafeArea(
+                child: CircleAvatar(
+                  backgroundColor: Colors.white,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.black),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -88,7 +99,7 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
                 const SizedBox(height: 20),
                 const Text('Identify Yourself', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
                 const SizedBox(height: 10),
-                const Text('Enter your mobile number to start', style: TextStyle(color: Colors.grey)),
+                Text('Enter your mobile number to start', style: TextStyle(color: Theme.of(context).hintColor)),
                 const SizedBox(height: 30),
                 TextField(
                   controller: _mobileController,
@@ -166,13 +177,13 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: Colors.blue.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.blue.shade200),
+              border: Border.all(color: Colors.blue.withOpacity(0.3)),
             ),
             child: Text(
               'Plates Used: ${_identifiedStudent!.plateCount}',
-              style: TextStyle(color: Colors.blue.shade800, fontWeight: FontWeight.bold),
+              style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(height: 40),
@@ -210,12 +221,12 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                title: const Text('Veg Meal'),
+                title: Text('Veg Meal', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
                 leading: const Icon(Icons.eco, color: Colors.green),
                 onTap: () => Navigator.pop(ctx, 'Veg'),
               ),
               ListTile(
-                title: const Text('Non-Veg Meal'),
+                title: Text('Non-Veg Meal', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
                 leading: const Icon(Icons.kebab_dining, color: Colors.red),
                 onTap: () => Navigator.pop(ctx, 'Non-Veg'),
               ),
@@ -301,7 +312,15 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
     }
   }
 
-  void _showMealSelectionDialog(DatabaseService db, {required bool isGuest}) {
+  void _showMealSelectionDialog(DatabaseService db, {required bool isGuest}) async {
+    // Fetch prices from owner settings
+    final ownerDoc = await FirebaseFirestore.instance.collection('owners').doc(widget.ownerId).get();
+    final owner = Owner.fromDocument(ownerDoc);
+    final vegPrice = owner.guestVegPrice;
+    final nonVegPrice = owner.guestNonVegPrice;
+    
+    if (!mounted) return;
+    
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -310,12 +329,13 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              title: const Text('Veg Meal'),
+              title: Text('Veg Meal (₹${vegPrice.toInt()})'),
               leading: const Icon(Icons.eco, color: Colors.green),
               onTap: () => _handleGuestPayment(db, 'Veg'),
             ),
+            const Divider(),
             ListTile(
-              title: const Text('Non-Veg Meal'),
+              title: Text('Non-Veg Meal (₹${nonVegPrice.toInt()})'),
               leading: const Icon(Icons.kebab_dining, color: Colors.red),
               onTap: () => _handleGuestPayment(db, 'Non-Veg'),
             ),
@@ -328,23 +348,55 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
   Future<void> _handleGuestPayment(DatabaseService db, String type) async {
     Navigator.pop(context); // Close selection
     
+    // Fetch price for display
+    final ownerDoc = await FirebaseFirestore.instance.collection('owners').doc(widget.ownerId).get();
+    final owner = Owner.fromDocument(ownerDoc);
+    final amount = type == 'Veg' ? owner.guestVegPrice : owner.guestNonVegPrice;
+    
+    if (!mounted) return;
+    
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('Select Payment'),
+        title: Text('Payment - ₹${amount.toInt()}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ElevatedButton.icon(
-              onPressed: () => _submitGuestRequest(db, type, 'Cash'),
-              icon: const Icon(Icons.money),
-              label: const Text('Pay Cash'),
+            Text('$type Meal', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.all(16),
+                ),
+                onPressed: () async {
+                  Navigator.pop(ctx); // Close payment dialog
+                  await _submitGuestRequest(db, type, 'Cash');
+                },
+                icon: const Icon(Icons.money),
+                label: const Text('Pay Cash'),
+              ),
             ),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              onPressed: () => _payOnline(db, type),
-              icon: const Icon(Icons.account_balance_wallet),
-              label: const Text('Pay Online (UPI)'),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.all(16),
+                ),
+                onPressed: () async {
+                  Navigator.pop(ctx); // Close payment dialog
+                  await _payOnline(db, type);
+                },
+                icon: const Icon(Icons.account_balance_wallet),
+                label: const Text('Pay Online (UPI)'),
+              ),
             ),
           ],
         ),
@@ -364,22 +416,47 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
     }
 
     final upiUrl = 'upi://pay?pa=$upi&pn=${owner.messName}&am=$amount&cu=INR';
-    if (await canLaunchUrl(Uri.parse(upiUrl))) {
-      await launchUrl(Uri.parse(upiUrl));
-      _submitGuestRequest(db, type, 'Online');
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not launch payment app.')));
+    
+    try {
+      // For web, we need to use externalApplication mode
+      await launchUrl(
+        Uri.parse(upiUrl),
+        mode: LaunchMode.externalApplication,
+      );
+      // Submit request after launching payment
+      if (mounted) {
+        _submitGuestRequest(db, type, 'Online', amount: amount);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not launch payment app. Please pay cash.')),
+        );
+      }
     }
   }
 
-  Future<void> _submitGuestRequest(DatabaseService db, String type, String method) async {
+
+  Future<void> _submitGuestRequest(DatabaseService db, String type, String method, {double? amount}) async {
+    double finalAmount = amount ?? 0.0;
+    
+    // If amount not provided (e.g. Cash), fetch from DB
+    if (finalAmount == 0.0) {
+      final ownerDoc = await FirebaseFirestore.instance.collection('owners').doc(widget.ownerId).get();
+      final owner = Owner.fromDocument(ownerDoc);
+      finalAmount = type == 'Veg' ? owner.guestVegPrice : owner.guestNonVegPrice;
+    }
+
     final ref = await db.recordGuestMeal({
       'type': type,
       'paymentMethod': method,
       'status': 'pending',
+      'amount': finalAmount,
     });
-    setState(() => _pendingRequestId = ref.id);
-    if (mounted) Navigator.pop(context); // Close payment dialog
+    
+    if (mounted) {
+      setState(() => _pendingRequestId = ref.id);
+    }
   }
 
   Widget _buildWaitingView() {
@@ -393,9 +470,9 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
           const SizedBox(height: 20),
           const Text('Waiting for Approval...', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 40),
-            child: Text('The owner is reviewing your meal request. Stay on this screen.', textAlign: TextAlign.center),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text('The owner is reviewing your meal request. Stay on this screen.', textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).hintColor)),
           ),
         ],
       ),

@@ -53,7 +53,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -99,7 +99,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                     double totalPending = 0;
 
                     for (var s in students) {
-                      final p = paymentMap[s.id];
+                      final p = paymentMap[ s.id];
                       final fee = s.monthlyFee;
                       final paidAmt = p?.paidAmount ?? 0;
                       
@@ -117,7 +117,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                         // Summary Card
                         Card(
                           margin: const EdgeInsets.all(16),
-                          color: Colors.white,
+                          color: Theme.of(context).cardColor,
                           elevation: 2,
                           child: Padding(
                             padding: const EdgeInsets.all(16),
@@ -136,7 +136,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                                     const Text('Collected'),
                                   ],
                                 ),
-                                Container(width: 1, height: 40, color: Colors.grey),
+                                Container(width: 1, height: 40, color: Theme.of(context).dividerColor),
                                 Column(
                                   children: [
                                     Text(

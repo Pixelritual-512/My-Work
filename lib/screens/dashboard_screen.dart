@@ -31,9 +31,11 @@ class DashboardScreen extends StatelessWidget {
     final databaseService = DatabaseService(uid: user!.uid);
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final currentMonth = DateFormat('yyyy-MM').format(DateTime.now());
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final headerColor = isDark ? Colors.white : Colors.black87;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBodyBehindAppBar: true, // Make AppBar transparent over gradient
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -95,11 +97,6 @@ class DashboardScreen extends StatelessWidget {
             onPressed: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const SettingsScreen())),
           ),
-          IconButton(
-            icon: const Icon(Icons.exit_to_app, color: Colors.white),
-            tooltip: 'Logout',
-            onPressed: () => authService.signOut(),
-          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -121,55 +118,88 @@ class DashboardScreen extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.vertical(bottom: Radius.circular(40)),
                   ),
-                  padding: const EdgeInsets.fromLTRB(24, 100, 24, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Stack(
                     children: [
-                      FutureBuilder<Owner?>(
-                        future: databaseService.getOwner(user.uid),
-                        builder: (context, snapshot) {
-                          final name = snapshot.data?.name ?? user.displayName ?? "Owner";
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Welcome back,',
-                                style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 16),
-                              ).animate().fade(duration: 600.ms),
-                              const SizedBox(height: 4),
-                              Text(
-                                name,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                ),
-                              ).animate().fade(duration: 600.ms).slideX(begin: 0.2, end: 0),
-                            ],
-                          );
-                        },
+                      // Decorative background circles for depth
+                      Positioned(
+                        top: -100,
+                        right: -50,
+                        child: Container(
+                          width: 300,
+                          height: 300,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.05),
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 24),
-                      // Today's Date Badge
-                      Container(
-                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                         decoration: BoxDecoration(
-                           color: Colors.white.withOpacity(0.2),
-                           borderRadius: BorderRadius.circular(20),
-                         ),
-                         child: Row(
-                           mainAxisSize: MainAxisSize.min,
-                           children: [
-                             const Icon(Icons.calendar_today, color: Colors.white, size: 16),
-                             const SizedBox(width: 8),
-                             Text(
-                               DateFormat('EEEE, d MMMM').format(DateTime.now()),
-                               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                             ),
-                           ],
-                         ),
-                      )
+                      Positioned(
+                        top: 50,
+                        left: -50,
+                        child: Container(
+                          width: 150,
+                          height: 150,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.08),
+                          ),
+                        ),
+                      ),
+                      
+                      // Main Header Content
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 100, 24, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            FutureBuilder<Owner?>(
+                              future: databaseService.getOwner(user.uid),
+                              builder: (context, snapshot) {
+                                final name = snapshot.data?.name ?? user.displayName ?? "Owner";
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Welcome back,',
+                                      style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 16),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      name,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 24),
+                            // Today's Date Badge
+                            Container(
+                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                               decoration: BoxDecoration(
+                                 color: Colors.white.withOpacity(0.2),
+                                 borderRadius: BorderRadius.circular(20),
+                               ),
+                               child: Row(
+                                 mainAxisSize: MainAxisSize.min,
+                                 children: [
+                                   const Icon(Icons.calendar_today, color: Colors.white, size: 16),
+                                   const SizedBox(width: 8),
+                                   Text(
+                                     DateFormat('EEEE, d MMMM').format(DateTime.now()),
+                                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                   ),
+                                 ],
+                               ),
+                            )
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -181,11 +211,11 @@ class DashboardScreen extends StatelessWidget {
                   right: 20,
                   child: Row(
                     children: [
-                      Expanded(child: _buildAttendanceCard(databaseService, today, 'Lunch', Colors.orange)),
+                      Expanded(child: _buildAttendanceCard(databaseService, today, 'Lunch', Colors.orange, isDark)),
                       const SizedBox(width: 16),
-                      Expanded(child: _buildAttendanceCard(databaseService, today, 'Dinner', Colors.indigo)),
+                      Expanded(child: _buildAttendanceCard(databaseService, today, 'Dinner', Colors.indigo, isDark)),
                     ],
-                  ).animate().slideY(begin: 1, end: 0, curve: Curves.easeOutBack, duration: 600.ms, delay: 200.ms),
+                  ),
                   ),
 
               ],
@@ -193,28 +223,31 @@ class DashboardScreen extends StatelessWidget {
             
             const SizedBox(height: 80), // Spacer for overlapping cards
 
-            // 3. Main Content
+            // 3. Main Content with smooth fade-in
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Live Guest Requests
-                  _buildPendingGuestRequests(databaseService),
+                  _buildPendingGuestRequests(databaseService, isDark)
+                      .animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
                   const SizedBox(height: 16),
 
                   // Guest Stats
-                  _buildGuestCard(databaseService).animate().fade(delay: 300.ms).slideX(begin: -0.2, end: 0),
+                  _buildGuestCard(databaseService)
+                      .animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
                   const SizedBox(height: 16),
-                  
-                  // Revenue
-                  _buildRevenueCard(databaseService, currentMonth).animate().fade(delay: 400.ms).slideX(begin: 0.2, end: 0),
-                  
+
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'Quick Actions',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
+                    style: TextStyle(
+                      fontSize: 20, 
+                      fontWeight: FontWeight.bold,
+                      color: headerColor
+                    ),
+                  ).animate().fadeIn(delay: 300.ms),
                   const SizedBox(height: 16),
                   
                   GridView.count(
@@ -225,24 +258,32 @@ class DashboardScreen extends StatelessWidget {
                     mainAxisSpacing: 12,
                     childAspectRatio: 0.9,
                     children: [
-
-                      _CoolAction(Icons.how_to_reg, 'Attendance', Colors.blue, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AttendanceScreen()))).animate().fade(delay: 500.ms).scale(),
-                      _CoolAction(Icons.group, 'Members', Colors.orange, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StudentsListScreen()))).animate().fade(delay: 600.ms).scale(),
-                      _CoolAction(Icons.restaurant_menu, 'Menu', Colors.pink, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MenuScreen()))).animate().fade(delay: 700.ms).scale(),
-                      _CoolAction(Icons.account_balance_wallet, 'Payments', Colors.deepPurple, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentsScreen()))).animate().fade(delay: 800.ms).scale(),
-                      _CoolAction(Icons.analytics, 'Reports', Colors.teal, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportsScreen()))).animate().fade(delay: 900.ms).scale(),
-                      _CoolAction(Icons.qr_code_2, 'QR Codes', Colors.blueGrey, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QrInviteScreen()))).animate().fade(delay: 1000.ms).scale(),
-                      _CoolAction(Icons.settings, 'Settings', Colors.grey, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))).animate().fade(delay: 1100.ms).scale(),
+                      // Distinct, vibrant colors for easy recognition
+                      _CoolAction(Icons.how_to_reg, 'Attendance', Colors.blueAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AttendanceScreen())), isDark)
+                          .animate().scale(delay: 400.ms, duration: 300.ms, curve: Curves.elasticOut),
+                      _CoolAction(Icons.group, 'Members', Colors.orange, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StudentsListScreen())), isDark)
+                          .animate().scale(delay: 450.ms, duration: 300.ms, curve: Curves.elasticOut),
+                      _CoolAction(Icons.restaurant_menu, 'Menu', Colors.pinkAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MenuScreen())), isDark)
+                          .animate().scale(delay: 500.ms, duration: 300.ms, curve: Curves.elasticOut),
+                      _CoolAction(Icons.account_balance_wallet, 'Payments', Colors.deepPurple, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentsScreen())), isDark)
+                          .animate().scale(delay: 550.ms, duration: 300.ms, curve: Curves.elasticOut),
+                      _CoolAction(Icons.analytics, 'Reports', Colors.teal, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportsScreen())), isDark)
+                          .animate().scale(delay: 600.ms, duration: 300.ms, curve: Curves.elasticOut),
                     ],
                   ),
 
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'Menu Highlights',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
+                    style: TextStyle(
+                      fontSize: 20, 
+                      fontWeight: FontWeight.bold,
+                      color: headerColor
+                    ),
+                  ).animate().fadeIn(delay: 650.ms),
                   const SizedBox(height: 16),
-                  _buildMenuCard(databaseService, today),
+                  _buildMenuCard(databaseService, today, isDark)
+                      .animate().fadeIn(duration: 500.ms, delay: 700.ms).slideX(begin: 0.1, end: 0, curve: Curves.easeOut),
                   const SizedBox(height: 32),
                 ],
               ),
@@ -253,15 +294,12 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPendingGuestRequests(DatabaseService db) {
+  Widget _buildPendingGuestRequests(DatabaseService db, bool isDark) {
     return StreamBuilder<QuerySnapshot>(
       stream: db.getPendingGuestMealsStream(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)),
-          );
+          return const SizedBox.shrink();
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const SizedBox.shrink();
@@ -282,12 +320,12 @@ class DashboardScreen extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.orange.shade100),
+            border: Border.all(color: Colors.orange.shade100.withOpacity(0.5)),
             boxShadow: [
               BoxShadow(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.orange.withOpacity(isDark ? 0.05 : 0.1),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               )
@@ -300,10 +338,10 @@ class DashboardScreen extends StatelessWidget {
                  children: [
                    const Icon(Icons.notifications_active, color: Colors.orange),
                    const SizedBox(width: 8),
-                   const Text(
+                   Text(
                      'Live Guest Requests', 
-                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
-                   ).animate().shimmer(duration: 2000.ms),
+                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isDark ? Colors.white : Colors.black87)
+                   ),
                  ],
                ),
                const SizedBox(height: 12),
@@ -332,12 +370,12 @@ class DashboardScreen extends StatelessWidget {
                      ),
                      title: Text(
                        'Guest ($variant)',
-                       style: const TextStyle(fontWeight: FontWeight.bold),
+                       style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
                      ),
                      subtitle: Text(
                        '₹${price.toInt()} • $payment',
                        style: TextStyle(
-                         color: isOnline ? Colors.purple : Colors.grey[700],
+                         color: isOnline ? Colors.purple : (isDark ? Colors.grey[400] : Colors.grey[600]),
                          fontWeight: FontWeight.w500
                        ),
                      ),
@@ -364,7 +402,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAttendanceCard(DatabaseService db, String date, String type, Color color) {
+  Widget _buildAttendanceCard(DatabaseService db, String date, String type, Color color, bool isDark) {
     return StreamBuilder<List<Attendance>>(
       stream: db.getAttendanceStream(date),
       builder: (context, snapshot) {
@@ -377,10 +415,14 @@ class DashboardScreen extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
-              BoxShadow(color: const Color(0xFF6C63FF).withOpacity(0.15), blurRadius: 20, offset: const Offset(0, 10))
+              BoxShadow(
+                color: const Color(0xFF6C63FF).withOpacity(isDark ? 0.05 : 0.15), 
+                blurRadius: 20, 
+                offset: const Offset(0, 10)
+              )
             ],
           ),
           child: Column(
@@ -390,9 +432,20 @@ class DashboardScreen extends StatelessWidget {
                const SizedBox(height: 12),
                Text(
                  count.toString(), 
-                 style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, height: 1.0)
+                 style: TextStyle(
+                   fontSize: 32, 
+                   fontWeight: FontWeight.bold, 
+                   height: 1.0, 
+                   color: isDark ? Colors.white : Colors.black87
+                 )
                ),
-               Text(type, style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500)),
+               Text(
+                 type, 
+                 style: TextStyle(
+                   color: isDark ? Colors.grey[400] : Colors.grey[600], 
+                   fontWeight: FontWeight.w500
+                 )
+               ),
             ],
           ),
         );
@@ -402,180 +455,108 @@ class DashboardScreen extends StatelessWidget {
 
   Widget _buildGuestCard(DatabaseService db) {
      return StreamBuilder<Map<String, dynamic>>(
-       stream: db.getTodayGuestStats(),
+       stream: db.getGuestAnalytics(),
        builder: (context, snapshot) {
           int count = 0;
-          double revenue = 0;
+          double todayRevenue = 0;
+          double totalRevenue = 0;
+          
           if (snapshot.hasData) {
-             count = snapshot.data!['count'];
-             revenue = snapshot.data!['revenue'].toDouble();
+             count = snapshot.data!['todayCount'];
+             todayRevenue = snapshot.data!['todayRevenue'];
+             totalRevenue = snapshot.data!['totalRevenue'];
           }
+          
           return Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF11998e), Color(0xFF38ef7d)]),
+              // Deep Orange Gradient: Warm, vibrant, and maintains excellent readability
+              gradient: LinearGradient(
+                colors: [Colors.deepOrange.shade400, Colors.deepOrange.shade700],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(24),
               boxShadow: const [
                 BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 5))
               ]
             ),
-            child: Row(
-               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-               children: [
-                 Column(
-                   crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              children: [
+                Row(
+                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                    children: [
-                     const Text('Today\'s Guests', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                     const SizedBox(height: 4),
-                     Text('₹${revenue.toInt()}', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                     Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         const Text('Today\'s Guests', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                         const SizedBox(height: 4),
+                         Text('₹${todayRevenue.toInt()}', style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                       ],
+                     ),
+                     Container(
+                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                       decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(16)),
+                       child: Text('$count Plates', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                     )
                    ],
-                 ),
-                 Container(
-                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                   decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(16)),
-                   child: Text('$count Plates', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                 )
-               ],
+                ),
+                const SizedBox(height: 16),
+                Container(height: 1, color: Colors.white24),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.account_balance_wallet, color: Colors.white70, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Total Guest Revenue: ₹${totalRevenue.toInt()}',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ],
+                ),
+              ],
             ),
           );
        }
      );
   }
 
-  Widget _buildRevenueCard(DatabaseService db, String currentMonth) {
-    return StreamBuilder<List<Student>>(
-       stream: db.studentsStream,
-       builder: (context, sSnap) {
-          if(!sSnap.hasData) return const SizedBox.shrink();
-          double expected = sSnap.data!.fold(0, (sum, s) => sum + s.monthlyFee);
-          
-          return StreamBuilder<List<Payment>>(
-             stream: db.getPaymentsStream(currentMonth),
-             builder: (context, pSnap) {
-                double collected = 0;
-                if(pSnap.hasData) collected = pSnap.data!.fold(0, (sum, p) => sum + p.paidAmount);
-                double pending = expected - collected;
-                if(pending < 0) pending = 0;
-
-                return Card(
-                   elevation: 4,
-                   shadowColor: Colors.black12,
-                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                   child: Padding(
-                     padding: const EdgeInsets.all(20),
-                     child: Row(
-                       children: [
-                          // 3D-ish Pie Chart
-                          SizedBox(
-                            height: 100,
-                            width: 100,
-                            child: PieChart(
-                               PieChartData(
-                                  sectionsSpace: 4,
-                                  centerSpaceRadius: 30,
-                                  sections: [
-                                     PieChartSectionData(
-                                        value: collected > 0 ? collected : 1, // Fallback to avoid empty chart
-                                        color: Colors.green,
-                                        radius: 18,
-                                        showTitle: false,
-                                     ),
-                                     PieChartSectionData(
-                                        value: pending > 0 ? pending : 0.1, 
-                                        color: Colors.orange,
-                                        radius: 15,
-                                        showTitle: false,
-                                     ),
-                                  ]
-                               )
-                            ),
-                          ),
-                          const SizedBox(width: 24),
-                          Expanded(
-                           child: Column(
-                             children: [
-                               Row(
-                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                 children: [
-                                   _RevItem('Expected', expected, Colors.blue),
-                                   _RevItem('Collected', collected, Colors.green),
-                                 ],
-                               ),
-                               const SizedBox(height: 12),
-                               Align(
-                                 alignment: Alignment.centerRight,
-                                 child: _RevItem('Pending', pending, Colors.orange),
-                               )
-                             ],
-                           ) 
-                          )
-                       ],
-                     ),
-                   ),
-                );
-             },
-          );
-       },
-    );
-  }
   
-  Widget _buildMenuCard(DatabaseService db, String today) {
+  Widget _buildMenuCard(DatabaseService db, String today, bool isDark) {
     return StreamBuilder<MessMenu?>(
       stream: db.getMenuStream(today),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Text('Loading menu...');
+        if (!snapshot.hasData) return Text('Loading menu...', style: TextStyle(color: isDark ? Colors.grey : Colors.black54));
         final menu = snapshot.data;
-        if (menu == null) return const Text('No menu added for today.');
+        if (menu == null) return Text('No menu added for today.', style: TextStyle(color: isDark ? Colors.grey : Colors.black54));
         return Card(
           elevation: 0,
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: Colors.grey.shade200)
+              side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))
           ),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
                 if (menu.isNonVegDay)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.red.shade200),
-                          ),
-                          child: Row(
-                            children: const [
-                              Icon(Icons.restaurant, color: Colors.red, size: 14),
-                              SizedBox(width: 6),
-                              Text('NON-VEG DAY', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 10)),
-                            ],
-                          ),
-                        ),
+                        Icon(Icons.warning, color: Colors.red, size: 16),
+                        SizedBox(width: 8),
+                        Text('Non-Veg Day', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
-                Row(
-                  children: [
-                    Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.orange.shade50, shape: BoxShape.circle), child: const Icon(Icons.wb_sunny, color: Colors.orange, size: 20)),
-                    const SizedBox(width: 12),
-                    Expanded(child: Text(menu.lunchMenu, style: const TextStyle(fontWeight: FontWeight.w500))),
-                  ],
-                ),
-                const Divider(height: 24),
-                Row(
-                  children: [
-                    Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.indigo.shade50, shape: BoxShape.circle), child: const Icon(Icons.nights_stay, color: Colors.indigo, size: 20)),
-                    const SizedBox(width: 12),
-                    Expanded(child: Text(menu.dinnerMenu, style: const TextStyle(fontWeight: FontWeight.w500))),
-                  ],
-                ),
+                const SizedBox(height: 16),
+                _MenuItem('Lunch', menu.lunchMenu, Icons.wb_sunny, Colors.blue, isDark),
+                const Divider(height: 30),
+                _MenuItem('Dinner', menu.dinnerMenu, Icons.nights_stay, Colors.indigo, isDark),
               ],
             ),
           ),
@@ -595,12 +576,16 @@ class DashboardScreen extends StatelessWidget {
             
             return Container(
               padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   const Text(
+                   Text(
                      'Plan Expired Members ⚠️',
-                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color),
                    ),
                    const SizedBox(height: 16),
                    if (!snapshot.hasData)
@@ -631,7 +616,7 @@ class DashboardScreen extends StatelessWidget {
                                child: student.photoUrl.isEmpty ? const Icon(Icons.person) : null,
                              ),
                              title: Text(student.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                             subtitle: Text('Plates: ${student.plateCount} • ${student.mobileNumber}'),
+                             subtitle: Text('Plates: ${student.plateCount} • ${student.mobileNumber}', style: TextStyle(color: Theme.of(context).hintColor)),
                              trailing: ElevatedButton(
                                onPressed: () {
                                  Navigator.pop(context); // close sheet
@@ -677,69 +662,123 @@ class DashboardScreen extends StatelessWidget {
 
 }
 
-class _RevItem extends StatelessWidget {
-  final String label;
-  final double amount;
-  final Color color;
-  const _RevItem(this.label, this.amount, this.color);
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          '₹${(amount / 1000).toStringAsFixed(1)}k',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
-        ),
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-      ],
-    );
-  }
-}
-
-class _CoolAction extends StatelessWidget {
+class _CoolAction extends StatefulWidget {
   final IconData icon;
   final String label;
   final Color color;
   final VoidCallback onTap;
+  final bool isDark;
 
-  const _CoolAction(this.icon, this.label, this.color, this.onTap);
+  const _CoolAction(this.icon, this.label, this.color, this.onTap, this.isDark);
+
+  @override
+  State<_CoolAction> createState() => _CoolActionState();
+}
+
+class _CoolActionState extends State<_CoolAction> {
+  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-             BoxShadow(color: Colors.grey.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 6))
-          ]
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [color, color.withOpacity(0.7)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _isPressed ? 0.95 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+               BoxShadow(
+                 color: Colors.grey.withOpacity(widget.isDark ? 0.05 : 0.08), 
+                 blurRadius: 12, 
+                 offset: const Offset(0, 6)
+               )
+            ],
+            // Gradient border for premium feel
+            border: Border.all(color: widget.color.withOpacity(0.1), width: 1),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: widget.color.withOpacity(0.1),
+                  shape: BoxShape.circle,
                 ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(color: color.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 3))
-                ]
+                child: Icon(widget.icon, color: widget.color, size: 28),
               ),
-              child: Icon(icon, color: Colors.white, size: 26),
-            ),
-            const SizedBox(height: 10),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-          ],
+              const SizedBox(height: 12),
+              Text(
+                widget.label, 
+                style: TextStyle(
+                  fontWeight: FontWeight.w600, 
+                  fontSize: 15,
+                  color: widget.isDark ? Colors.white : Colors.black87
+                )
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _MenuItem extends StatelessWidget {
+  final String label;
+  final String items;
+  final IconData icon;
+  final Color color;
+  final bool isDark;
+
+  const _MenuItem(this.label, this.items, this.icon, this.color, this.isDark);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16)
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label, 
+                style: TextStyle(
+                  color: isDark ? Colors.grey[400] : Colors.grey[600], 
+                  fontSize: 14, 
+                  fontWeight: FontWeight.w600
+                )
+              ),
+              const SizedBox(height: 4),
+              Text(
+                items.isEmpty ? 'Not set yet' : items, 
+                style: TextStyle(
+                  fontSize: 16, 
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white : Colors.black87
+                )
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
