@@ -1,0 +1,36 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "tiffin-mess-app-2e443",
+          "appId": "1:1012237886987:android:1d9ee505ecc8509d4f490e",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "tiffin-mess-app-2e443",
+          "configurations": {
+            "android": "1:1012237886987:android:1d9ee505ecc8509d4f490e",
+            "web": "1:1012237886987:web:2ea67741c4bf7c954f490e"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

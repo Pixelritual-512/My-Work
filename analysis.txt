@@ -1,0 +1,54 @@
+Analyzing tiffin_mess_app...                                    
+
+   info • 'background' is deprecated and shouldn't be used. Use surface instead. This feature was deprecated after v3.18.0-0.1.pre • lib/main.dart:51:13 • deprecated_member_use
+warning • Unused import: '../../widgets/custom_button.dart' • lib/screens/attendance_screen.dart:8:8 • unused_import
+warning • The declaration '_isToday' isn't referenced • lib/screens/attendance_screen.dart:22:12 • unused_element
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/attendance_screen.dart:218:54 • deprecated_member_use
+warning • Unused import: 'login_screen.dart' • lib/screens/auth/signup_screen.dart:5:8 • unused_import
+  error • The name 'QrInviteScreen' isn't a class • lib/screens/dashboard_screen.dart:126:143 • creation_with_non_type
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/dashboard_screen.dart:174:39 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/dashboard_screen.dart:239:38 • deprecated_member_use
+warning • The declaration '_buildAttendanceCard' isn't referenced • lib/screens/dashboard_screen.dart:316:10 • unused_element
+   info • The parameter name 'sum' matches a visible type name • lib/screens/dashboard_screen.dart:337:50 • avoid_types_as_parameter_names
+   info • The parameter name 'sum' matches a visible type name • lib/screens/dashboard_screen.dart:343:68 • avoid_types_as_parameter_names
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/dashboard_screen.dart:498:36 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/dashboard_screen.dart:508:65 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/dashboard_screen.dart:614:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/dashboard_screen.dart:624:41 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/dashboard_screen.dart:630:42 • deprecated_member_use
+warning • Unused import: '../models/payment_model.dart' • lib/screens/dashboard_screen_inspired.dart:7:8 • unused_import
+warning • Unused import: '../models/menu_model.dart' • lib/screens/dashboard_screen_inspired.dart:8:8 • unused_import
+warning • Unused import: '../models/student_model.dart' • lib/screens/dashboard_screen_inspired.dart:9:8 • unused_import
+warning • Unused import: 'reports_screen.dart' • lib/screens/dashboard_screen_inspired.dart:16:8 • unused_import
+   info • Use 'const' for final variables initialized to a constant value • lib/screens/dashboard_screen_inspired.dart:31:5 • prefer_const_declarations
+warning • The '!' will have no effect because the receiver can't be null • lib/screens/dashboard_screen_inspired.dart:57:38 • unnecessary_non_null_assertion
+warning • Unused import: 'auth/login_screen.dart' • lib/screens/landing_screen.dart:2:8 • unused_import
+warning • Unused import: 'dashboard_screen.dart' • lib/screens/landing_screen.dart:3:8 • unused_import
+warning • The declaration '_loadMenu' isn't referenced • lib/screens/menu_screen.dart:33:8 • unused_element
+   info • Unnecessary braces in a string interpolation • lib/screens/menu_screen.dart:97:23 • unnecessary_brace_in_string_interps
+warning • The value of the local variable 'fullyPaidCount' isn't used • lib/screens/payments_screen.dart:97:25 • unused_local_variable
+   info • Use 'const' literals as arguments to constructors of '@immutable' classes • lib/screens/qr_invite_screen.dart:95:28 • prefer_const_literals_to_create_immutables
+   info • Use 'const' with the constructor to improve performance • lib/screens/qr_invite_screen.dart:96:19 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/screens/qr_invite_screen.dart:96:76 • prefer_const_constructors
+   info • Unnecessary braces in a string interpolation • lib/screens/self_service_meal_screen.dart:171:59 • unnecessary_brace_in_string_interps
+warning • Unused import: '../models/owner_model.dart' • lib/screens/settings_screen.dart:5:8 • unused_import
+   info • Unnecessary escape in string literal • lib/screens/settings_screen.dart:226:74 • unnecessary_string_escapes
+   info • Unnecessary escape in string literal • lib/screens/settings_screen.dart:226:86 • unnecessary_string_escapes
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/settings_screen.dart:279:97 • deprecated_member_use
+warning • Unused import: '../../models/owner_model.dart' • lib/screens/student_registration_screen.dart:4:8 • unused_import
+   info • The member 'dispose' overrides an inherited member but isn't annotated with '@override' • lib/screens/student_registration_screen.dart:51:8 • annotate_overrides
+   info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre • lib/screens/student_registration_screen.dart:209:19 • deprecated_member_use
+   info • The member 'dispose' overrides an inherited member but isn't annotated with '@override' • lib/screens/students/add_edit_student_screen.dart:67:8 • annotate_overrides
+   info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre • lib/screens/students/add_edit_student_screen.dart:216:17 • deprecated_member_use
+   info • Statements in an if should be enclosed in a block • lib/screens/students/student_history_screen.dart:144:59 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/students/student_history_screen.dart:145:31 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/students/student_history_screen.dart:149:60 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/students/student_history_screen.dart:150:31 • curly_braces_in_flow_control_structures
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/students/student_history_screen.dart:206:24 • deprecated_member_use
+warning • Unused import: 'student_history_screen.dart' • lib/screens/students/students_list_screen.dart:8:8 • unused_import
+   info • Don't invoke 'print' in production code • lib/services/auth_service.dart:43:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/auth_service.dart:57:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/auth_service.dart:78:7 • avoid_print
+warning • Unnecessary cast • lib/services/database_service.dart:221:20 • unnecessary_cast
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/dashboard_card.dart:35:23 • deprecated_member_use
+

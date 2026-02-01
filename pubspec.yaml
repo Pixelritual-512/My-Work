@@ -1,0 +1,44 @@
+name: tiffin_mess_app
+description: A new Flutter project for Mess Management.
+publish_to: 'none'
+version: 1.1.0+2
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+  provider: ^6.1.2
+  intl: ^0.19.0
+  google_fonts: ^6.1.0
+  # Cupertino Icons for iOS style icons
+  cupertino_icons: ^1.0.2
+  url_launcher: ^6.3.2
+  qr_flutter: ^4.1.0
+  fl_chart: ^0.69.0
+  flutter_animate: ^4.5.0
+  flutter_displaymode: ^0.6.0
+  mobile_scanner: ^5.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icon.png
+    - assets/images/
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon.png"

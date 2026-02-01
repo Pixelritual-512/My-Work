@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1012237886987",
+    "project_id": "tiffin-mess-app-2e443",
+    "storage_bucket": "tiffin-mess-app-2e443.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1012237886987:android:1d9ee505ecc8509d4f490e",
+        "android_client_info": {
+          "package_name": "com.example.tiffin_mess_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWZORLQSkPteNqX5ui83dFCp6yvVQBOzE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
