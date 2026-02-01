@@ -1,11 +1,11 @@
 {
-    "name": "tiffin_mess_app",
-    "short_name": "tiffin_mess_app",
+    "name": "TiffinMate",
+    "short_name": "TiffinMate",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#6C63FF",
+    "theme_color": "#6C63FF",
+    "description": "Smart Tiffin & Mess Management",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
