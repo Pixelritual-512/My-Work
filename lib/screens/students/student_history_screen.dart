@@ -52,7 +52,7 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                          children: [
                            const Text('Current Cycle Usage', style: TextStyle(fontWeight: FontWeight.bold)),
-                           Text('Started: $startDateStr', style: const TextStyle(color: Colors.grey)),
+                           Text('Started: $startDateStr', style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500)),
                          ],
                        ),
                        const SizedBox(height: 16),
@@ -159,10 +159,6 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
                                _buildStatCard('Lunch', totalLunch.toString(), Colors.orange),
                                const SizedBox(width: 8),
                                _buildStatCard('Dinner', totalDinner.toString(), Colors.indigo),
-                               const SizedBox(width: 8),
-                               _buildStatCard('Veg', vegCount.toString(), Colors.green),
-                               const SizedBox(width: 8),
-                               _buildStatCard('Non-Veg', nonVegCount.toString(), Colors.red),
                             ],
                           ),
                         ),
@@ -177,8 +173,8 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
                               return ListTile(
                                 title: Text(record.date),
                                 subtitle: Text(
-                                  (record.lunch ? 'Lunch (${record.lunchVariant ?? "Veg"}) ' : '') +
-                                  (record.dinner ? 'Dinner (${record.dinnerVariant ?? "Veg"})' : '')
+                                  (record.lunch ? 'Lunch ' : '') +
+                                  (record.dinner ? 'Dinner' : '')
                                 ),
                               );
                             },

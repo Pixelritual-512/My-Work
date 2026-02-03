@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../services/auth_service.dart';
@@ -36,8 +37,16 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     setState(() => _isLoading = true);
     final user = Provider.of<AuthService>(context, listen: false).currentUser;
     if (user != null) {
-      final db = DatabaseService(uid: user.uid);
-      await db.initializeAttendanceForDate(_formattedDate);
+      try {
+        final db = DatabaseService(uid: user.uid);
+        await db.initializeAttendanceForDate(_formattedDate);
+      } catch (e) {
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(content: Text('Error initializing: $e'), backgroundColor: Colors.red),
+           );
+        }
+      }
     }
     if (mounted) setState(() => _isLoading = false);
   }
@@ -100,10 +109,14 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               ],
             ),
           ),
+          if (_isLoading) const LinearProgressIndicator(), 
           Expanded(
             child: StreamBuilder<List<Student>>(
               stream: db.studentsStream,
               builder: (context, studentSnapshot) {
+                if (studentSnapshot.hasError) {
+                  return Center(child: Text('Error loading students: ${studentSnapshot.error}'));
+                }
                 if (studentSnapshot.connectionState ==
                     ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -120,6 +133,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 return StreamBuilder<List<Attendance>>(
                   stream: db.getAttendanceStream(_formattedDate),
                   builder: (context, attendanceSnapshot) {
+                    if (attendanceSnapshot.hasError) {
+                      return Center(child: Text('Error loading attendance: ${attendanceSnapshot.error}'));
+                    }
                     if (attendanceSnapshot.connectionState ==
                         ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
@@ -162,9 +178,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                   'Lunch',
                                   record.lunch,
                                   _isLunchEnabled(),
-                                  () => db.markAttendance(
+                                  () => _handleMarkAttendance(
                                     record.studentId,
-                                    _formattedDate,
                                     'lunch',
                                     !record.lunch,
                                   ),
@@ -175,9 +190,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                   'Dinner',
                                   record.dinner,
                                   _isDinnerEnabled(),
-                                  () => db.markAttendance(
+                                  () => _handleMarkAttendance(
                                     record.studentId,
-                                    _formattedDate,
                                     'dinner',
                                     !record.dinner,
                                   ),
@@ -198,49 +212,80 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     );
   }
 
+  Future<void> _handleMarkAttendance(String studentId, String type, bool value) async {
+    final db = DatabaseService(uid: Provider.of<AuthService>(context, listen: false).currentUser!.uid);
+    
+    // Show immediate feedback
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Marking $type as ${value ? "Present" : "Absent"}...'), 
+        duration: const Duration(milliseconds: 500)
+      )
+    );
+
+    try {
+      await db.markAttendance(studentId, _formattedDate, type, value);
+    } catch (e) {
+      if (mounted) {
+        // Show detailed error in a dialog so it's impossible to miss
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Error Marking Attendance'),
+            content: SingleChildScrollView(
+              child: SelectableText(e.toString()),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                   Clipboard.setData(ClipboardData(text: e.toString()));
+                   ScaffoldMessenger.of(context).showSnackBar(
+                     const SnackBar(content: Text('Error copied to clipboard'))
+                   );
+                },
+                child: const Text('Copy Error'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildToggle(BuildContext context, String label, bool value,
       bool enabled, VoidCallback onTap) {
-    // Green = Present, Red = Absent/Unpaid? 
-    // Requirement: Green = Paid / Present, Red = Unpaid / Absent
     
-    // Logic: If 'value' (present), show Green. If not, show Red? 
-    // Or Red means "Absent explicitly"? 
-    // Toggles usually are On/Off. 
-    // I'll make the active color Green and inactive Red (or Grey?).
-    // Requirement says "Big buttons... Green = Paid / Present".
+    final color = value ? Colors.green : Colors.red;
     
     return Expanded(
       flex: 1,
-      child: GestureDetector(
-        onTap: enabled ? onTap : null,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: value ? Colors.green : Colors.red.withOpacity(0.2), 
-            // If absent, maybe light red or grey? User said "Red = Unpaid / Absent".
-            // So if value is false, it should be Red?
-            // "Green = Paid / Present, Red = Unpaid / Absent"
-            // Let's make it SOLID Green if True, SOLID Red if False.
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-               color: value ? Colors.green.shade700 : Colors.red.shade700,
-               width: 2 
-            ),
+      child: SizedBox(
+        height: 60, // Fixed height for touch target
+        child: ElevatedButton(
+          onPressed: enabled ? onTap : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: value ? Colors.green : Colors.red.shade50,
+            foregroundColor: value ? Colors.white : Colors.red,
+            side: BorderSide(color: color, width: 2),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            elevation: 0,
+            padding: EdgeInsets.zero,
           ),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 label,
-                style: TextStyle(
-                  color: value ? Colors.white : Colors.red.shade900,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               ),
               const SizedBox(height: 4),
               Icon(
                 value ? Icons.check_circle : Icons.cancel,
-                color: value ? Colors.white : Colors.red,
                 size: 20,
               ),
             ],

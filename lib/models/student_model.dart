@@ -12,6 +12,8 @@ class Student {
   final DateTime? messStartDate;
   final String messType; // 'One Time' or 'Two Time'
   final int plateCount; // Current cycle plate count
+  final double pendingPayment;
+  final String pendingPaymentMode;
 
   Student({
     required this.id,
@@ -25,6 +27,8 @@ class Student {
     this.messStartDate,
     this.messType = 'Two Time',
     this.plateCount = 0,
+    this.pendingPayment = 0.0,
+    this.pendingPaymentMode = '',
   });
 
   factory Student.fromDocument(DocumentSnapshot doc) {
@@ -43,6 +47,8 @@ class Student {
           : null,
       messType: data['messType'] ?? 'Two Time',
       plateCount: data['plateCount'] ?? 0,
+      pendingPayment: (data['pendingPayment'] ?? 0).toDouble(),
+      pendingPaymentMode: data['pendingPaymentMode'] ?? '',
     );
   }
 
@@ -58,6 +64,8 @@ class Student {
       'messStartDate': messStartDate != null ? Timestamp.fromDate(messStartDate!) : null,
       'messType': messType,
       'plateCount': plateCount,
+      'pendingPayment': pendingPayment,
+      'pendingPaymentMode': pendingPaymentMode,
     };
   }
 }

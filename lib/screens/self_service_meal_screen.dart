@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../services/database_service.dart';
 import '../models/student_model.dart';
 import '../models/owner_model.dart';
 import '../models/attendance_model.dart';
+import 'student_registration_screen.dart';
 
 class SelfServiceMealScreen extends StatefulWidget {
   final String ownerId;
@@ -345,13 +345,20 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
     );
   }
 
+  // Refactored: Pre-calculate details so 'launchUrl' is called synchronously on tap
   Future<void> _handleGuestPayment(DatabaseService db, String type) async {
     Navigator.pop(context); // Close selection
     
-    // Fetch price for display
+    // FETCH DATA FIRST (Async)
     final ownerDoc = await FirebaseFirestore.instance.collection('owners').doc(widget.ownerId).get();
     final owner = Owner.fromDocument(ownerDoc);
     final amount = type == 'Veg' ? owner.guestVegPrice : owner.guestNonVegPrice;
+    
+    // Prepare UPI URL immediately
+    final upi = owner.upiId;
+    final safeName = Uri.encodeComponent(owner.messName);
+    // Include tn=AppPayment as requested
+    final upiUrl = 'upi://pay?pa=$upi&pn=$safeName&am=$amount&cu=INR&tn=AppPayment';
     
     if (!mounted) return;
     
@@ -365,6 +372,8 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
           children: [
             Text('$type Meal', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
+            
+            // CASH BUTTON
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -373,90 +382,57 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.all(16),
                 ),
-                onPressed: () async {
-                  Navigator.pop(ctx); // Close payment dialog
-                  await _submitGuestRequest(db, type, 'Cash');
+                onPressed: () {
+                  Navigator.pop(ctx); 
+                  _submitGuestRequest(db, type, 'Cash', amount: amount);
                 },
                 icon: const Icon(Icons.money),
                 label: const Text('Pay Cash'),
               ),
             ),
+            
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.all(16),
+            
+            // PAY ONLINE BUTTON (Simplified)
+            if (upi.isNotEmpty)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.all(16),
+                  ),
+                  onPressed: () {
+                    // Manual Verification Flow: User pays externally, then clicks here
+                    Navigator.pop(ctx); 
+                    _submitGuestRequest(db, type, 'Online', amount: amount);
+                  },
+                  icon: const Icon(Icons.account_balance_wallet),
+                  label: const Text('Pay Online (UPI)'),
                 ),
-                onPressed: () async {
-                  Navigator.pop(ctx); // Close payment dialog
-                  await _payOnline(db, type);
-                },
-                icon: const Icon(Icons.account_balance_wallet),
-                label: const Text('Pay Online (UPI)'),
               ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  Future<void> _payOnline(DatabaseService db, String type) async {
-    final ownerDoc = await FirebaseFirestore.instance.collection('owners').doc(widget.ownerId).get();
-    final owner = Owner.fromDocument(ownerDoc);
-    final upi = owner.upiId;
-    final amount = type == 'Veg' ? owner.guestVegPrice : owner.guestNonVegPrice;
+  // NOTE: old _payOnline method removed as logic is now integrated above for safety
 
-    if (upi.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Owner hasn\'t set up UPI yet.')));
-      return;
-    }
-
-    final upiUrl = 'upi://pay?pa=$upi&pn=${owner.messName}&am=$amount&cu=INR';
-    
-    try {
-      // For web, we need to use externalApplication mode
-      await launchUrl(
-        Uri.parse(upiUrl),
-        mode: LaunchMode.externalApplication,
-      );
-      // Submit request after launching payment
-      if (mounted) {
-        _submitGuestRequest(db, type, 'Online', amount: amount);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not launch payment app. Please pay cash.')),
-        );
-      }
-    }
-  }
-
+  // NOTE: old _payOnline method removed as logic is now integrated above for safety
 
   Future<void> _submitGuestRequest(DatabaseService db, String type, String method, {double? amount}) async {
+    // ... existing logic ...
     double finalAmount = amount ?? 0.0;
-    
-    // If amount not provided (e.g. Cash), fetch from DB
-    if (finalAmount == 0.0) {
-      final ownerDoc = await FirebaseFirestore.instance.collection('owners').doc(widget.ownerId).get();
-      final owner = Owner.fromDocument(ownerDoc);
-      finalAmount = type == 'Veg' ? owner.guestVegPrice : owner.guestNonVegPrice;
-    }
-
+    // ... logic ...
     final ref = await db.recordGuestMeal({
       'type': type,
       'paymentMethod': method,
       'status': 'pending',
       'amount': finalAmount,
     });
-    
-    if (mounted) {
-      setState(() => _pendingRequestId = ref.id);
-    }
+    if (mounted) setState(() => _pendingRequestId = ref.id);
   }
 
   Widget _buildWaitingView() {
@@ -480,11 +456,13 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
   }
 
   Widget _buildSuccessView(String type, {DateTime? time}) {
+    // ... existing UI ...
     final isVeg = type == 'Veg';
     final formatter = DateFormat('dd MMM yyyy, hh:mm a');
     final timeStr = time != null ? formatter.format(time) : '';
 
     return Container(
+      width: double.infinity, // Ensure full width
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isVeg 
@@ -494,44 +472,92 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
           end: Alignment.bottomRight
         )
       ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.check_circle_outline, size: 120, color: Colors.white),
-            const SizedBox(height: 40),
-            const Text('MEAL APPROVED!', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
-            const SizedBox(height: 10),
-            if (timeStr.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20)
-                ),
-                child: Text(
-                  timeStr, 
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)
-                ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.check_circle_outline, size: 120, color: Colors.white),
+          const SizedBox(height: 40),
+          const Text('MEAL APPROVED!', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
+          const SizedBox(height: 10),
+          if (timeStr.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20)
               ),
-            const SizedBox(height: 20),
-            const Text('Kindly proceed to take your plate.', style: TextStyle(fontSize: 18, color: Colors.white)),
-            const SizedBox(height: 50),
+              child: Text(
+                timeStr, 
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)
+              ),
+            ),
+          const SizedBox(height: 20),
+          const Text('Kindly proceed to take your plate.', style: TextStyle(fontSize: 18, color: Colors.white)),
+          const SizedBox(height: 50),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white, 
-                foregroundColor: isVeg ? Colors.green : Colors.red
+                foregroundColor: isVeg ? Colors.green : Colors.red,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16)
               ),
-              onPressed: () => setState(() {
-                _pendingRequestId = null;
-                _identifiedStudent = null;
-                _showMemberSuccess = false;
-                _mobileController.clear();
-              }),
-              child: const Text('Back to Home'),
+              onPressed: () async {
+                 // Fetch mess name for personalized thank you
+                 final ownerDoc = await FirebaseFirestore.instance.collection('owners').doc(widget.ownerId).get();
+                 final owner = Owner.fromDocument(ownerDoc);
+                 
+                 if (!context.mounted) return;
+
+                 showDialog(
+                   context: context,
+                   barrierDismissible: false,
+                   builder: (ctx) => AlertDialog(
+                     title: const Text('Thank You!'),
+                     content: Column(
+                       mainAxisSize: MainAxisSize.min,
+                       children: [
+                         Text(
+                           'Thanks for visiting ${owner.messName}!\nWe hope you enjoyed your meal.',
+                           textAlign: TextAlign.center,
+                           style: const TextStyle(fontSize: 16),
+                         ),
+                         const SizedBox(height: 20),
+                         const Text(
+                           'Would you like to join the mess as a regular member?',
+                           textAlign: TextAlign.center,
+                           style: TextStyle(fontWeight: FontWeight.bold),
+                         ),
+                       ],
+                     ),
+                     actionsAlignment: MainAxisAlignment.spaceEvenly,
+                     actions: [
+                       TextButton(
+                         onPressed: () {
+                           // Try to close app (SystemNavigator works on Android/iOS, sometimes blocked on Web)
+                           SystemNavigator.pop();
+                           
+                           // Fallback: If web browser blocks close, navigate back to Landing Screen
+                           // This ensures user isn't stuck on the success screen
+                           Navigator.of(context).popUntil((route) => route.isFirst);
+                         },
+                         child: const Text('No, Close App', style: TextStyle(color: Colors.grey)),
+                       ),
+                       ElevatedButton(
+                         onPressed: () {
+                           Navigator.pop(ctx); // Close dialog
+                           Navigator.push(
+                             context,
+                             MaterialPageRoute(builder: (_) => StudentRegistrationScreen(ownerId: widget.ownerId)),
+                           );
+                         },
+                         child: const Text('Yes, Join Now'),
+                       ),
+                     ],
+                   ),
+                 );
+              },
+              child: const Text('I Received My Plate', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

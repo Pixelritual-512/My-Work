@@ -169,6 +169,53 @@ class DatabaseService {
     // Finally, delete owner profile
     await _db.collection('owners').doc(uid).delete();
   }
+  
+  // --- Student Approval Methods ---
+  Stream<List<Student>> getPendingStudentsStream() {
+    return _db
+        .collection('students')
+        .where('ownerId', isEqualTo: uid)
+        .where('active', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Student.fromDocument(doc)).toList());
+  }
+
+  Future<void> approveStudent(Student student) async {
+    final batch = _db.batch();
+    
+    // 1. If there's a pending payment, record it
+    if (student.pendingPayment > 0) {
+       final now = DateTime.now();
+       final monthStr = "${now.year}-${now.month.toString().padLeft(2,'0')}";
+       
+       final paymentRef = _db.collection('payments').doc();
+       batch.set(paymentRef, {
+        'ownerId': uid,
+        'studentId': student.id,
+        'month': monthStr,
+        'amount': student.monthlyFee,
+        'paidAmount': student.pendingPayment,
+        'paid': student.pendingPayment >= student.monthlyFee,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    // 2. Activate student and clear pending fields
+    final studentRef = _db.collection('students').doc(student.id);
+    batch.update(studentRef, {
+      'active': true,
+      'messStartDate': FieldValue.serverTimestamp(),
+      'pendingPayment': 0.0,
+      'pendingPaymentMode': '',
+    });
+
+    await batch.commit();
+  }
+
+  Future<void> rejectStudent(String studentId) async {
+    await deleteStudent(studentId);
+  }
 
 
   // --- Attendance Methods ---

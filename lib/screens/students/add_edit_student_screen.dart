@@ -3,6 +3,8 @@ import '../../models/student_model.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddEditStudentScreen extends StatefulWidget {
   final Student? student;
@@ -18,6 +20,11 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
   late TextEditingController _mobileController;
   late String _messType;
   bool _isLoading = false;
+  
+  // Payment variables
+  bool _markInitialPayment = false;
+  final TextEditingController _paymentAmountController = TextEditingController();
+  String _paymentMode = 'Cash';
 
   @override
   void initState() {
@@ -31,6 +38,7 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
   void dispose() {
     _nameController.dispose();
     _mobileController.dispose();
+    _paymentAmountController.dispose();
     super.dispose();
   }
 
@@ -83,6 +91,38 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
                   onChanged: (v) => setState(() => _messType = v!),
                 ),
                 const SizedBox(height: 30),
+                const SizedBox(height: 15),
+                // Payment Section (Only for new students)
+                if (widget.student == null) ...[
+                  const Divider(),
+                  CheckboxListTile(
+                    title: const Text('Mark Initial Payment (e.g. Advance/Full)'),
+                    value: _markInitialPayment,
+                    onChanged: (v) => setState(() => _markInitialPayment = v!),
+                  ),
+                  if (_markInitialPayment) ...[
+                    TextFormField(
+                       controller: _paymentAmountController,
+                       decoration: const InputDecoration(labelText: 'Amount Paid', prefixIcon: Icon(Icons.currency_rupee)),
+                       keyboardType: TextInputType.number,
+                       validator: (v) => _markInitialPayment && v!.isEmpty ? 'Enter amount' : null,
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: _paymentMode,
+                      decoration: const InputDecoration(labelText: 'Payment Mode', prefixIcon: Icon(Icons.payment)),
+                      items: ['Cash', 'Online', 'UPI'].map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                      onChanged: (v) => setState(() => _paymentMode = v!),
+                    ),
+                  ],
+                  const Divider(),
+                ],
+                const SizedBox(height: 30),
                 ElevatedButton(
                   onPressed: () => _save(db),
                   child: Text(widget.student == null ? 'Add Member' : 'Update Member'),
@@ -124,6 +164,58 @@ class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
 
       if (widget.student == null) {
         await db.addStudent(student);
+        
+        // --- 1. Record Initial Payment ---
+        if (_markInitialPayment) {
+           double amount = double.tryParse(_paymentAmountController.text) ?? 0;
+           if (amount > 0) {
+             final now = DateTime.now();
+             // Assuming monthly payment logic, or just a one-off
+             // We'll mark it for the current month
+             final monthStr = "${now.year}-${now.month.toString().padLeft(2,'0')}";
+             
+             // We need the student ID. addStudent doesn't return ID directly easily without fetching 
+             // BUT `db.addStudent` in our service uses .add(). Let's fetch the student by mobile to get ID
+             // Optimally we should refactor addStudent to return ID. 
+             // For now, let's fetch by mobile.
+             try {
+                final addedStudentSnap = await FirebaseFirestore.instance
+                  .collection('students')
+                  .where('ownerId', isEqualTo: db.uid)
+                  .where('mobileNumber', isEqualTo: student.mobileNumber)
+                  .limit(1)
+                  .get();
+                  
+                if (addedStudentSnap.docs.isNotEmpty) {
+                  final addedId = addedStudentSnap.docs.first.id;
+                  await db.markPayment(addedId, monthStr, student.monthlyFee, amount);
+                }
+             } catch (e) {
+               print('Error marking payment: $e');
+             }
+           }
+        }
+        
+        // --- 2. WhatsApp Invite Logic ---
+        try {
+          final owner = await db.getOwner(db.uid);
+          if (owner != null && owner.whatsappGroupLink.isNotEmpty) {
+            final link = owner.whatsappGroupLink;
+            final mess = owner.messName;
+            final msg = 'Hello ${student.name}, Welcome to $mess! Please join our WhatsApp group: $link';
+            final encodedMsg = Uri.encodeComponent(msg);
+            final url = Uri.parse('https://wa.me/${student.mobileNumber}?text=$encodedMsg');
+            
+            // Launch WhatsApp
+            if (await canLaunchUrl(url)) {
+              await launchUrl(url, mode: LaunchMode.externalApplication);
+            }
+          }
+        } catch (e) {
+          print('Error launching WhatsApp: $e');
+        }
+        // -----------------------------
+
       } else {
         await db.updateStudent(student);
       }

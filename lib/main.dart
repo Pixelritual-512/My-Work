@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -39,8 +40,16 @@ class MyApp extends StatelessWidget {
         Provider<AuthService>(
           create: (_) => AuthService(),
         ),
-        ChangeNotifierProvider<ThemeService>(
+        StreamProvider<User?>(
+          create: (context) => context.read<AuthService>().authStateChanges,
+          initialData: null,
+        ),
+        ChangeNotifierProxyProvider<User?, ThemeService>(
           create: (_) => ThemeService(),
+          update: (_, user, theme) {
+            theme!.updateUser(user?.uid);
+            return theme;
+          },
         ),
       ],
       child: Consumer<ThemeService>(

@@ -15,6 +15,7 @@ class Owner {
   final bool isNonVegToday;
   final String whatsappGroupLink;
   final String upiId;
+  final String themePreference; // 'system', 'light', 'dark'
 
   Owner({
     required this.id,
@@ -31,6 +32,7 @@ class Owner {
     this.isNonVegToday = false,
     this.whatsappGroupLink = '',
     this.upiId = '',
+    this.themePreference = 'system',
   });
 
   factory Owner.fromDocument(DocumentSnapshot doc) {
@@ -50,6 +52,7 @@ class Owner {
       isNonVegToday: data['isNonVegToday'] ?? false,
       whatsappGroupLink: data['whatsappGroupLink'] ?? '',
       upiId: data['upiId'] ?? '',
+      themePreference: data['themePreference'] ?? 'system',
     );
   }
 
@@ -59,6 +62,7 @@ class Owner {
       'email': email,
       'messName': messName,
       'phone': phone,
+      'themePreference': themePreference,
       'createdAt': Timestamp.fromDate(createdAt),
       'oneTimeFee': oneTimeFee,
       'twoTimeFee': twoTimeFee,

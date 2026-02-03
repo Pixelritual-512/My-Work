@@ -82,7 +82,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 _buildSectionTitle('Mess Details'),
                 _buildTextField(_messNameController, 'Mess Name', Icons.restaurant),
-                _buildTextField(_rulesController, 'Rules/Instructions', Icons.list, maxLines: 3),
+                _buildTextField(
+                  _rulesController, 
+                  'Rules/Instructions', 
+                  Icons.list, 
+                  maxLines: null, // Allow unlimited lines
+                  hint: 'Enter each rule on a new line (one below the other)',
+                ),
                 
                 const SizedBox(height: 20),
                 _buildSectionTitle('Pricing (Monthly)'),
@@ -126,12 +132,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       final nonVegPrice = parsePrice(_guestNonVegController.text);
 
                       await db.updateOwnerSettings(
-                        messName: _messNameController.text,
+                        messName: _messNameController.text.trim(),
                         monthlyFeeOneTime: oneTime,
                         monthlyFeeTwoTime: twoTime,
-                        rules: _rulesController.text,
-                        whatsappGroupLink: _whatsappLinkController.text,
-                        upiId: _upiIdController.text,
+                        rules: _rulesController.text.trim(),
+                        whatsappGroupLink: _whatsappLinkController.text.trim(),
+                        upiId: _upiIdController.text.trim(),
                         guestVegPrice: vegPrice,
                         guestNonVegPrice: nonVegPrice,
                       );
@@ -427,7 +433,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isNumber = false, int maxLines = 1, String? hint}) {
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isNumber = false, int? maxLines = 1, String? hint}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: TextFormField(
@@ -437,7 +443,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           hintText: hint,
           prefixIcon: Icon(icon),
         ),
-        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        keyboardType: isNumber 
+            ? TextInputType.number 
+            : (maxLines == null || maxLines > 1) ? TextInputType.multiline : TextInputType.text,
         maxLines: maxLines,
       ),
     );

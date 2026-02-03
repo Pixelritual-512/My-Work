@@ -229,6 +229,11 @@ class DashboardScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Pending Student Approvals
+                  _buildPendingStudentRequests(databaseService, isDark)
+                      .animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
+                  const SizedBox(height: 16),
+
                   // Live Guest Requests
                   _buildPendingGuestRequests(databaseService, isDark)
                       .animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
@@ -294,6 +299,133 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildPendingStudentRequests(DatabaseService db, bool isDark) {
+    return StreamBuilder<List<Student>>(
+      stream: db.getPendingStudentsStream(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.red.shade100,
+            child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)),
+          );
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final students = snapshot.data!;
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.blue.shade100.withOpacity(0.5)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.blue.withOpacity(isDark ? 0.05 : 0.1),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+               Row(
+                 children: [
+                   const Icon(Icons.person_add, color: Colors.blue),
+                   const SizedBox(width: 8),
+                   Text(
+                     'Member Approvals', 
+                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isDark ? Colors.white : Colors.black87)
+                   ),
+                 ],
+               ),
+               const SizedBox(height: 12),
+               ListView.separated(
+                 shrinkWrap: true,
+                 physics: const NeverScrollableScrollPhysics(),
+                 itemCount: students.length,
+                 separatorBuilder: (_, __) => const Divider(),
+                 itemBuilder: (context, index) {
+                   final student = students[index];
+                   final hasPayment = student.pendingPayment > 0;
+
+                   return ListTile(
+                     contentPadding: EdgeInsets.zero,
+                     leading: CircleAvatar(
+                       backgroundColor: Colors.blue.shade50,
+                       child: const Icon(Icons.person, color: Colors.blue, size: 20),
+                     ),
+                     title: Text(
+                       student.name,
+                       style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
+                     ),
+                     subtitle: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         Text(student.mobileNumber, style: TextStyle(color: Theme.of(context).hintColor)),
+                         if (hasPayment)
+                           Container(
+                             margin: const EdgeInsets.only(top: 4),
+                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                             decoration: BoxDecoration(
+                               color: Colors.green.withOpacity(0.1),
+                               borderRadius: BorderRadius.circular(4),
+                             ),
+                             child: Text(
+                               'Paid: ₹${student.pendingPayment.toInt()} (${student.pendingPaymentMode})',
+                               style: const TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold),
+                             ),
+                           ),
+                       ],
+                     ),
+                     trailing: Row(
+                       mainAxisSize: MainAxisSize.min,
+                       children: [
+                         IconButton(
+                           icon: const Icon(Icons.close, color: Colors.red),
+                           onPressed: () => _confirmAction(context, 'Reject', student.name, () => db.rejectStudent(student.id)),
+                         ),
+                         IconButton(
+                           icon: const Icon(Icons.check_circle, color: Colors.green, size: 32),
+                           onPressed: () => _confirmAction(context, 'Approve', student.name, () => db.approveStudent(student)),
+                         ),
+                       ],
+                     ),
+                   );
+                 },
+               ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _confirmAction(BuildContext context, String action, String name, VoidCallback onConfirm) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('$action Request?'),
+        content: Text('Are you sure you want to $action $name?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              onConfirm();
+              Navigator.pop(ctx);
+            },
+            child: Text(action),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPendingGuestRequests(DatabaseService db, bool isDark) {
     return StreamBuilder<QuerySnapshot>(
       stream: db.getPendingGuestMealsStream(),
@@ -353,8 +485,9 @@ class DashboardScreen extends StatelessWidget {
                  itemBuilder: (context, index) {
                    final doc = docs[index];
                    final data = doc.data() as Map<String, dynamic>;
-                   final price = (data['price'] ?? 0).toDouble();
-                   final variant = data['variant'] ?? 'Veg';
+                   // Fix: Read 'amount' instead of 'price', and 'type' instead of 'variant'
+                   final price = (data['amount'] ?? 0).toDouble();
+                   final variant = data['type'] ?? 'Veg';
                    final payment = data['paymentMethod'] ?? 'Cash';
                    final isOnline = payment == 'Online';
 
