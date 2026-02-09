@@ -19,9 +19,8 @@ class _QrInviteScreenState extends State<QrInviteScreen> {
     final user = Provider.of<AuthService>(context, listen: false).currentUser;
     if (user == null) return const SizedBox.shrink();
 
-    // Placeholder URL for the new Verification Web App.
-    // TODO: Update this to your deployed web app URL (e.g., https://your-project.web.app)
-    const String kVerificationAppUrl = 'https://tiffin-mess-verify.web.app'; 
+    // Live Verification Web App URL
+    const String kVerificationAppUrl = 'https://tiffin-mess-app-2e443.web.app'; 
     
     // Single Unified Link for the new Web Verification Flow
     final String scanLink = '$kVerificationAppUrl/?messId=${user.uid}';
