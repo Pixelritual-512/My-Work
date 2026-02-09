@@ -347,7 +347,9 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
 
   // Refactored: Pre-calculate details so 'launchUrl' is called synchronously on tap
   Future<void> _handleGuestPayment(DatabaseService db, String type) async {
-    Navigator.pop(context); // Close selection
+    // Navigate back to the dialog, but use a flag to control popping
+    // We don't want to pop blindly if we are already in the right place
+    // Navigator.pop(context); // REMOVED to fix bug where it pops to landing screen
     
     // FETCH DATA FIRST (Async)
     final ownerDoc = await FirebaseFirestore.instance.collection('owners').doc(widget.ownerId).get();
@@ -460,6 +462,9 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
     final isVeg = type == 'Veg';
     final formatter = DateFormat('dd MMM yyyy, hh:mm a');
     final timeStr = time != null ? formatter.format(time) : '';
+    
+    // Check if this is a Member (identified) or Guest (pending request ID)
+    final isMember = _identifiedStudent != null;
 
     return Container(
       width: double.infinity, // Ensure full width
@@ -501,6 +506,16 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16)
               ),
               onPressed: () async {
+                 // For Members, just close and go back to initial state
+                 if (isMember) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => SelfServiceMealScreen(ownerId: widget.ownerId)),
+                      (route) => false,
+                    );
+                    return;
+                 }
+
+                 // For Guests, show the "Join Mess" Upsell
                  // Fetch mess name for personalized thank you
                  final ownerDoc = await FirebaseFirestore.instance.collection('owners').doc(widget.ownerId).get();
                  final owner = Owner.fromDocument(ownerDoc);
@@ -536,7 +551,6 @@ class _SelfServiceMealScreenState extends State<SelfServiceMealScreen> {
                            SystemNavigator.pop();
                            
                            // Fallback: If web browser blocks close, navigate back to Landing Screen
-                           // This ensures user isn't stuck on the success screen
                            Navigator.of(context).popUntil((route) => route.isFirst);
                          },
                          child: const Text('No, Close App', style: TextStyle(color: Colors.grey)),

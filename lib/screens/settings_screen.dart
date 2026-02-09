@@ -20,7 +20,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _twoTimeFeeController;
   late TextEditingController _rulesController;
   late TextEditingController _whatsappLinkController;
-  late TextEditingController _upiIdController;
+
   late TextEditingController _guestVegController;
   late TextEditingController _guestNonVegController;
 
@@ -32,7 +32,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _twoTimeFeeController = TextEditingController();
     _rulesController = TextEditingController();
     _whatsappLinkController = TextEditingController();
-    _upiIdController = TextEditingController();
+
     _guestVegController = TextEditingController();
     _guestNonVegController = TextEditingController();
   }
@@ -44,7 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _twoTimeFeeController.dispose();
     _rulesController.dispose();
     _whatsappLinkController.dispose();
-    _upiIdController.dispose();
+
     _guestVegController.dispose();
     _guestNonVegController.dispose();
     super.dispose();
@@ -69,7 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _twoTimeFeeController.text = owner.twoTimeFee.toString();
             _rulesController.text = owner.rules;
             _whatsappLinkController.text = owner.whatsappGroupLink;
-            _upiIdController.text = owner.upiId;
+
             _guestVegController.text = owner.guestVegPrice.toString();
             _guestNonVegController.text = owner.guestNonVegPrice.toString();
             _isDataLoaded = true;
@@ -112,7 +112,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 const SizedBox(height: 20),
                 _buildSectionTitle('Integrations'),
-                _buildTextField(_upiIdController, 'UPI ID (for payments)', Icons.payment, hint: 'example@okicici'),
+
                 _buildTextField(_whatsappLinkController, 'WhatsApp Group Link', Icons.chat, hint: 'https://chat.whatsapp.com/...'),
 
                 const SizedBox(height: 30),
@@ -137,7 +137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         monthlyFeeTwoTime: twoTime,
                         rules: _rulesController.text.trim(),
                         whatsappGroupLink: _whatsappLinkController.text.trim(),
-                        upiId: _upiIdController.text.trim(),
+                        upiId: owner.upiId,
                         guestVegPrice: vegPrice,
                         guestNonVegPrice: nonVegPrice,
                       );

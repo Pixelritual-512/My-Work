@@ -27,7 +27,7 @@ class StudentListTile extends StatelessWidget {
     }
   }
 
-  Future<void> _openWhatsApp(String number) async {
+  Future<void> _openWhatsApp(String number, String name) async {
     // Basic cleaning of number if needed, assuming user enters clean number or pure digits
     var cleanNumber = number.replaceAll(RegExp(r'\D'), '');
     // If number doesn't have country code (e.g. 10 digits), assume +91 (India)
@@ -35,7 +35,8 @@ class StudentListTile extends StatelessWidget {
       cleanNumber = '91$cleanNumber';
     }
     
-    final Uri launchUri = Uri.parse('https://wa.me/$cleanNumber');
+    final message = "Hello $name, your mess membership has been over please renew it.";
+    final Uri launchUri = Uri.parse('https://wa.me/$cleanNumber?text=${Uri.encodeComponent(message)}');
     if (!await launchUrl(launchUri, mode: LaunchMode.externalApplication)) {
       debugPrint('Could not launch WhatsApp to $number');
     }
@@ -95,14 +96,14 @@ class StudentListTile extends StatelessWidget {
                 );
               },
             ),
-            if (student.mobileNumber.isNotEmpty) ...[
+            if (student.mobileNumber.isNotEmpty && student.plateCount >= 28) ...[
               IconButton(
                 icon: const Icon(Icons.phone, color: Colors.green),
                 onPressed: () => _makeCall(student.mobileNumber),
               ),
               IconButton(
                 icon: const Icon(Icons.message, color: Colors.teal), // WhatsApp colorish
-                onPressed: () => _openWhatsApp(student.mobileNumber),
+                onPressed: () => _openWhatsApp(student.mobileNumber, student.name),
               ),
             ],
             const Icon(Icons.arrow_forward_ios, size: 16),

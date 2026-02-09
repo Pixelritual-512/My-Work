@@ -390,27 +390,67 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
   Future<void> _showPendingDialog(DatabaseService db) async {
     if (!mounted) return;
 
-    showDialog(
+    // Use a StreamBuilder dialog to listen for changes
+    await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Icon(Icons.hourglass_top, color: Colors.orange, size: 60),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Registration Requested!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            const SizedBox(height: 10),
-            Text('Your request has been sent to the mess owner for approval.', textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
-            const SizedBox(height: 10),
-            const Text('You will be notified once approved.', style: TextStyle(fontSize: 12, color: Colors.grey)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
-          ),
-        ],
+      builder: (ctx) => StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('students')
+            .where('ownerId', isEqualTo: widget.ownerId)
+            .where('mobileNumber', isEqualTo: _mobileController.text.trim())
+            .limit(1)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+            final data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
+            final isActive = data['active'] ?? false;
+
+            // If Approved, Close this dialog and show Success
+            if (isActive) {
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                Navigator.pop(ctx); // Close waiting dialog
+                
+                // Fetch whatsapp link
+                final ownerDoc = await FirebaseFirestore.instance.collection('owners').doc(widget.ownerId).get();
+                final whatsapp = ownerDoc.data()?['whatsappGroupLink'] ?? '';
+
+                if (mounted) {
+                  _showResultDialog(
+                    icon: Icons.check_circle, 
+                    color: Colors.green, 
+                    title: 'Approved!', 
+                    message: 'Welcome, ${data['name']}!\nYour registration is approved.',
+                    whatsappLink: whatsapp
+                  );
+                }
+              });
+            }
+          }
+
+          return PopScope(
+            canPop: false,
+            child: AlertDialog(
+              title: const Icon(Icons.hourglass_top, color: Colors.orange, size: 60),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Waiting for Approval...', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  const SizedBox(height: 10),
+                  Text('Please wait while the owner approves your request.\nDo not close this screen.', textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
+                  const SizedBox(height: 20),
+                  const CircularProgressIndicator(),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Close & Check Later'),
+                ),
+              ],
+            ),
+          );
+        }
       ),
     );
   }
